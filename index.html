@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>777 Dark Gaming - Aviator Fast</title>
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #000000;
+    color: #ffffff;
+    text-align: center;
+}
+.box {
+    background: #111;
+    border: 2px solid #ffcc00;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 400px;
+    box-shadow: 0 4px 10px rgba(255,255,0,0.2);
+}
+input, button, select {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border: 1px solid #ffcc00;
+    font-size: 16px;
+    background: #222;
+    color: #fff;
+}
+button {
+    background: #ffcc00;
+    color: #000;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+button:hover {opacity: 0.8;}
+.hidden {display: none;}
+.game {margin-top: 15px; padding: 15px; border: 1px solid #ffcc00; border-radius: 10px;}
+.grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin-top: 10px;
+}
+.cell {
+    background: #333;
+    padding: 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 20px;
+    transition:0.3s;
+}
+.cell:hover {background: #555;}
+#aviatorDisplay {
+    font-size:50px;
+    margin:10px 0;
+    position: relative;
+    height: 60px;
+    overflow: hidden;
+}
+#plane {
+    position: absolute;
+    left:0;
+    top:0;
+    transition: left 0.1s linear; /* VERY FAST movement */
+}
+#seconds {font-size:18px;color:#ffcc00;margin-top:5px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginBox" class="box">
+<h2>Login</h2>
+<input id="loginUser" placeholder="Username">
+<input id="loginPass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<button onclick="showSignup()">Sign Up</button>
+</div>
+
+<!-- SIGNUP -->
+<div id="signupBox" class="box hidden">
+<h2>Sign Up</h2>
+<input id="signupUser" placeholder="Username">
+<input id="signupPass" type="password" placeholder="Password">
+<button onclick="signup()">Create Account</button>
+<button onclick="showLogin()">Back to Login</button>
+</div>
+
+<!-- MAIN PLATFORM -->
+<div id="mainBox" class="hidden">
+<h1>🎰 777 DARK GAMING</h1>
+
+<div class="box">
+<h3>Balance: ₨ <span id="balanceDisplay">100</span></h3>
+<button onclick="deposit()">Deposit</button>
+<button onclick="withdraw()">Withdraw</button>
+<button onclick="showHistory()">Withdrawal History</button>
+</div>
+
+<!-- AVIATOR -->
+<div class="box game">
+<h3>Aviator Game</h3>
+<div id="aviatorDisplay">
+<span id="plane">🛩️</span> <span id="aviatorMultiplier">1.00x</span>
+</div>
+<div id="seconds">0s</div>
+<input id="aviatorBet" type="number" value="100" min="10">
+<button onclick="startAviator()">Place Bet</button>
+<button onclick="cashoutAviator()" id="cashoutBtn" disabled>Cashout</button>
+</div>
+
+<!-- MINES -->
+<div class="box game">
+<h3>Mines Game</h3>
+<label>Number of bombs:</label>
+<select id="bombCount">
+<option value="3">3 Bombs</option>
+<option value="5">5 Bombs</option>
+<option value="7">7 Bombs</option>
+<option value="10">10 Bombs</option>
+<option value="12">12 Bombs</option>
+<option value="15">15 Bombs</option>
+</select>
+<input id="minesBet" type="number" value="100" min="10">
+<button onclick="startMines()">Start Game</button>
+<button onclick="cashoutMines()" id="minesCashoutBtn">Cashout</button>
+<div class="grid" id="minesGrid"></div>
+</div>
+
+<button onclick="logout()">Logout</button>
+</div>
+
+<script>
+// ===== GLOBAL VARIABLES =====
+let currentUser=null;
+let balance=100;
+let withdrawalHistory=[];
+let aviatorActive=false;
+let aviatorMultiplier=1;
+let aviatorInterval=null;
+let aviatorBetAmount=0;
+let aviatorSeconds=0;
+let minesActive=false;
+let minesBetAmount=0;
+let minesMultiplier=1;
+let minesGemsFound=0;
+let minesArray=[];
+
+// ===== LOCAL STORAGE =====
+function saveUserData(){if(!currentUser)return;localStorage.setItem("user_"+currentUser,JSON.stringify({balance,withdrawalHistory}));}
+function loadUserData(){if(!currentUser)return;let data=JSON.parse(localStorage.getItem("user_"+currentUser));if(data){balance=data.balance;withdrawalHistory=data.withdrawalHistory||[];}document.getElementById("balanceDisplay").innerText=balance.toFixed(2);}
+
+// ===== LOGIN / SIGNUP =====
+function signup(){
+  const u=document.getElementById("signupUser").value.trim();
+  const p=document.getElementById("signupPass").value.trim();
+  if(!u||!p)return alert("Fill all fields!");
+  if(localStorage.getItem("user_"+u))return alert("User exists!");
+  localStorage.setItem("user_"+u,JSON.stringify({balance:100,withdrawalHistory:[]})); 
+  localStorage.setItem("pass_"+u,p);
+  alert("Account created! Login now.");
+  showLogin();
+}
+function login(){
+  const u=document.getElementById("loginUser").value.trim();
+  const p=document.getElementById("loginPass").value.trim();
+  const pass=localStorage.getItem("pass_"+u);
+  if(!pass||pass!==p)return alert("Wrong credentials!");
+  currentUser=u; loadUserData();
+  document.getElementById("loginBox").classList.add("hidden");
+  document.getElementById("signupBox").classList.add("hidden");
+  document.getElementById("mainBox").classList.remove("hidden");
+}
+function logout(){location.reload();}
+function showSignup(){document.getElementById("loginBox").classList.add("hidden");document.getElementById("signupBox").classList.remove("hidden");}
+function showLogin(){document.getElementById("signupBox").classList.add("hidden");document.getElementById("loginBox").classList.remove("hidden");}
+
+// ===== DEPOSIT / WITHDRAW =====
+function deposit(){
+  let amt=parseFloat(prompt("Enter deposit (₨100 - 10000)"));
+  if(isNaN(amt)||amt<100||amt>10000)return alert("Invalid amount");
+  balance+=amt; updateBalance(); saveUserData(); alert("Deposited ₨"+amt);
+}
+function withdraw(){
+  let amt=parseFloat(prompt("Enter withdrawal (₨300+)"));
+  if(isNaN(amt)||amt<300||amt>balance)return alert("Invalid amount");
+  let method=prompt("1=JazzCash, 2=EasyPaisa");
+  let num=prompt("Enter your number");
+  let name=prompt("Enter your name");
+  if(!num||!name)return alert("Number and Name required!");
+  balance-=amt;
+  withdrawalHistory.push({amt,method:method==="1"?"JazzCash":"EasyPaisa",number:num,name});
+  updateBalance(); saveUserData();
+  alert(`Withdrawal: ₨${amt}, ${method==="1"?"JazzCash":"EasyPaisa"}, ${name}, ${num}`);
+}
+function showHistory(){
+  if(withdrawalHistory.length===0)return alert("No history.");
+  let txt="Withdrawal History:\n\n";
+  withdrawalHistory.forEach(h=>txt+=`${h.method} ₨${h.amt}\n${h.name} ${h.number}\n\n`);
+  alert(txt);
+}
+function updateBalance(){document.getElementById("balanceDisplay").innerText=balance.toFixed(2);}
+
+// ===== AVIATOR =====
+function startAviator(){
+  if(aviatorActive)return alert("Game running!");
+  let bet=parseFloat(document.getElementById("aviatorBet").value);
+  if(isNaN(bet)||bet<10||bet>balance)return alert("Invalid bet!");
+  balance-=bet; updateBalance(); aviatorActive=true; aviatorBetAmount=bet; aviatorMultiplier=1; aviatorSeconds=0;
+  document.getElementById("cashoutBtn").disabled=false;
+  let plane=document.getElementById("plane");
+  aviatorInterval=setInterval(()=>{
+    aviatorSeconds++;
+    // VERY FAST multiplier increase
+    aviatorMultiplier += 0.08 + Math.random()*0.12; 
+    aviatorMultiplier = +aviatorMultiplier.toFixed(2);
+    
+    document.getElementById("aviatorMultiplier").innerText=aviatorMultiplier+"x";
+    document.getElementById("seconds").innerText=aviatorSeconds+"s";
+    
+    // VERY FAST plane movement
+    plane.style.left = (aviatorSeconds * 40) + "px";
+    
+    // HIGH crash chance for fast game
+    let crashChance = 0.08 + (aviatorSeconds * 0.02);
+    if(Math.random() < crashChance) endAviator(false);
+  }, 200); // VERY FAST interval (200ms instead of 500ms)
+}
+function cashoutAviator(){if(!aviatorActive)return; endAviator(true);}
+function endAviator(win){
+  clearInterval(aviatorInterval); 
+  aviatorActive=false;
+  document.getElementById("cashoutBtn").disabled=true;
+  
+  if(win){
+    let won=aviatorBetAmount*aviatorMultiplier; 
+    balance+=won; 
+    alert("🎉 Cashout! Won ₨"+won.toFixed(2));
+  }
+  else {
+    alert("💥 Crash! Lost ₨"+aviatorBetAmount);
+  }
+  
+  updateBalance(); 
+  saveUserData();
+  document.getElementById("plane").style.left="0px";
+  document.getElementById("seconds").innerText="0s";
+}
+
+// ===== MINES =====
+function startMines(){
+  if(minesActive)return alert("Mines running!");
+  let bet=parseFloat(document.getElementById("minesBet").value);
+  let bombs=parseInt(document.getElementById("bombCount").value);
+  if(isNaN(bet)||bet<10||bet>balance)return alert("Invalid bet!");
+  balance-=bet; updateBalance(); saveUserData();
+  minesActive=true; minesBetAmount=bet; minesMultiplier=1; minesGemsFound=0;
+  minesArray=Array(25).fill(0);
+  let placed=0; while(placed<bombs){let idx=Math.floor(Math.random()*25); if(minesArray[idx]!==1){minesArray[idx]=1; placed++;}}
+  let grid=document.getElementById("minesGrid"); grid.innerHTML="";
+  for(let i=0;i<25;i++){
+    let cell=document.createElement("div"); cell.className="cell"; cell.innerText="?";
+    cell.onclick=()=>revealMine(i,cell);
+    grid.appendChild(cell);
+  }
+}
+function revealMine(i,cell){
+  if(!minesActive)return;
+  if(minesArray[i]===1){cell.innerText="💣"; minesActive=false; alert("💥 Mine hit! Lost ₨"+minesBetAmount); document.getElementById("minesGrid").innerHTML="";}
+  else{cell.innerText="💎"; minesGemsFound++; minesMultiplier+=0.25; minesArray[i]=0;}
+}
+function cashoutMines(){
+  if(!minesActive)return alert("No active game");
+  let win=minesBetAmount*minesMultiplier; balance+=win; updateBalance(); saveUserData();
+  alert("🎉 Cashout! Won ₨"+win.toFixed(2));
+  document.getElementById("minesGrid").innerHTML=""; minesActive=false;
+}
+</script>
+</body>
+</html>
